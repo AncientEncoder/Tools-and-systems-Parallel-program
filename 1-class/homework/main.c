@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <time.h>
+#include <sys/time.h>
 double result = 0.0;  //Glb vals for rst
 int intervalsDef=1;  //intervals Define default 1
 int threadsDef=1;   //define threads default 1
@@ -32,7 +32,9 @@ int main(int argc, char *argv[]){
     }else{
         printf("->Warning running in default mod no args<-\n");
     }   
-    clock_t begin = clock();
+    struct timeval start;
+    struct timeval end;
+    gettimeofday(&start,NULL);
     pthread_t threads[threadsDef];
     int threadID[threadsDef];
     //Generate threads
@@ -44,8 +46,8 @@ int main(int argc, char *argv[]){
     for (int i = 0; i < threadsDef; i++){
         pthread_join(threads[i], NULL);
     }
-    clock_t end = clock();
-    double elapsed_time = (double)(end - begin) / CLOCKS_PER_SEC;
+    gettimeofday(&end,NULL);
+    double elapsed_time = (end.tv_sec-start.tv_sec)+(end.tv_usec-start.tv_usec)/1000000.0;//redefine time from clock_t to real time 
     printf("%f \n", result);
     printf("Completed by using time: %f s\n", elapsed_time);
     return 0;

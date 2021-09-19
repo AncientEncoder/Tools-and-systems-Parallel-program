@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": ["101","100"],
+            "args": ["100","100"],
             "cwd": "${fileDirname}"
         },
         {
