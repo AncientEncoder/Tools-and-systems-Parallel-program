@@ -1,5 +1,5 @@
 //formate to execute:
-//./name  part_to_devide thread_to_use
+//./run  part_to_devide thread_to_use
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
