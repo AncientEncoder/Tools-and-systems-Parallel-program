@@ -1,6 +1,5 @@
-//      formate to execute:
-//      ./name  part_to_devide thread_to_use
-//      berserq0123@gmail.com
+//formate to execute:
+//./name  part_to_devide thread_to_use
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -18,7 +17,7 @@ void *Generator(void *arg){
     for (int i = threadID; i < intervalsDef; i += threadsDef){
         tempRst = ((double)i + 0.5) * segement;
         rstByPart += 4.0 / (1 + tempRst * tempRst);
-        printf("Thread %3d completed...... with answer %lf\n",threadID,rstByPart);
+        
     }
 
     rstByPart *= segement;
@@ -27,27 +26,27 @@ void *Generator(void *arg){
 }
 
 int main(int argc, char *argv[]){
-    clock_t begin = clock();
     if (argc == 3){
         intervalsDef = atoi(argv[1]);
         threadsDef = atoi(argv[2]);
     }else{
         printf("->Warning running in default mod no args<-\n");
+    }   
+    clock_t begin = clock();
+    pthread_t threads[threadsDef];
+    int threadID[threadsDef];
+    //Generate threads
+    for (int i = 0; i < threadsDef; i++){
+        threadID[i] = i;
+        pthread_create(&threads[i], NULL, Generator, threadID + i);
     }
-        pthread_t threads[threadsDef];
-        int threadID[threadsDef];
-        //Generate threads
-        for (int i = 0; i < threadsDef; i++){
-            threadID[i] = i;
-            pthread_create(&threads[i], NULL, Generator, threadID + i);
-        }
-        //Execute threads
-        for (int i = 0; i < threadsDef; i++){
-            pthread_join(threads[i], NULL);
-        }
-        printf("%f \n", result);
-        clock_t end = clock();
-        double elapsed_time = (double)(end - begin) / CLOCKS_PER_SEC;
-        printf("Completed by using time: %f s\n", elapsed_time);
+    //Execute threads
+    for (int i = 0; i < threadsDef; i++){
+        pthread_join(threads[i], NULL);
+    }
+    clock_t end = clock();
+    double elapsed_time = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("%f \n", result);
+    printf("Completed by using time: %f s\n", elapsed_time);
     return 0;
 }
