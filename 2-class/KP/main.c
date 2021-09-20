@@ -2,146 +2,65 @@
 #include<stdio.h>
 #include<pthread.h>
 #include<stdlib.h>
-#include<sys/time.h>
-#include<stdlib.h>
 #include<string.h>
-#define Max_Matrix_size 1000
-#define Max_pthread_size 100
-double Matrix[Max_Matrix_size][Max_Matrix_size];
-int Matrix_size;
-int Thread_num;
-int Per_thread_do;
-double Per_thread_cal[Max_pthread_size];
-double result = 0.0;
-pthread_mutex_t mut;
-double det_cal(double **mmatrix,int size){
-	if(size == 1){
-		return mmatrix[0][0];
-	}
-	else{
-		double res = 0.0;
-		double **matrix = (double **)malloc(sizeof(double*) * (size));
-		for(int i = 0;i < size - 1;i++){
-			matrix[i] = (double *)malloc(sizeof(double) * (size));
-		}
-		for(int i = 0;i < size;i++){
-			for(int j = 1;j < size;j++){
-				for(int k = 0;k < size;k++){
-					if(k < i){
-						matrix[j - 1][k] = mmatrix[j][k];
-					}
-					if(k > i){
-						matrix[j - 1][k - 1] = mmatrix[j][k];
-					}
-				}
-			}
-			if(i % 2 == 0){
-				res += mmatrix[0][i] * det_cal(matrix,size - 1);
-			}
-			else{
-				res -= mmatrix[0][i] * det_cal(matrix,size - 1);
-			}
-		}
-		for (int i = 0; i < size - 1; i++) {
-			free(matrix[i]);
-		}
-		free(matrix);
-		return res;
+
+
+#define num 200
+int num_t;
+long sum=0;
+pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
+int arr_num[num];
+
+void iniz(){
+	for(int i=0;i<num;i++){
+		arr_num[i]=i;
 	}
 }
-void *t_hread(void *arg){
-	int q = *(int*)arg;
-	double **matrix = (double **)malloc(sizeof(double*) * (Matrix_size));     
-	for(int i = 0;i < Matrix_size;i++){
-		matrix[i] = (double *)malloc(sizeof(double) * (Matrix_size));
-	}
-	if(q != Thread_num - 1){
-		for(int i = q * Per_thread_do;i < ((q + 1) * Per_thread_do);i++){
-			for(int j = 1;j < Matrix_size;j++){
-				for(int k = 0;k < Matrix_size;k++){
-					if(k < i){
-						matrix[j - 1][k] = Matrix[j][k];
-					}
-					if(k > i){
-						matrix[j - 1][k - 1] = Matrix[j][k];
-					}
-				}
-			}
-			if(i % 2 == 0){
-				Per_thread_cal[q] += Matrix[0][i] * det_cal(matrix,Matrix_size - 1);	
-			}
-			
-			else{
-				Per_thread_cal[q] -= Matrix[0][i] * det_cal(matrix,Matrix_size - 1);
-			}
-		}		
-	} 
-	if(q == Thread_num - 1){
-		for(int i = q * Per_thread_do;i < Matrix_size;i++){
-			for(int j = 1;j < Matrix_size;j++){
-				for(int k = 0;k < Matrix_size;k++){
-					if(k < i){
-						matrix[j - 1][k] = Matrix[j][k];
-					}
-					if(k > i){
-						matrix[j - 1][k - 1] = Matrix[j][k];
-					}
-				}
-			}
-			if(i % 2 == 0){
-				Per_thread_cal[q] += Matrix[0][i] * det_cal(matrix,Matrix_size - 1);	
-			}
-			
-			else{
-				Per_thread_cal[q] -= Matrix[0][i] * det_cal(matrix,Matrix_size - 1);
-			}
-		}		
+
+void *arrSum(void *arg){
+	int id=*(int*)arg;
+	long tmp_sum=0;
+
+	for(int i=id;i<num;i+=num_t){
+		tmp_sum+=arr_num[i];
 	}
 	pthread_mutex_lock(&mut);
-	result += Per_thread_cal[q];
+	sum+=tmp_sum;
 	pthread_mutex_unlock(&mut);
-	for(int i = 0;i < Matrix_size - 1;i++){
-		free(matrix[i]);
-	}
-	free(matrix);
-	pthread_exit(0);
+	return NULL;
 }
-int main(int argc,char *argv[]){
-	if(argc != 3){
-		printf("Input format:MATRIX_SIZE,THREAD_NUM");
-		return 0;
-	}	
-	memset(Per_thread_cal, 0.0, sizeof(Per_thread_cal));
-	Matrix_size = atoi(argv[1]);    
-	Thread_num = atoi(argv[2]);		
-	char *input = argv[3];			
-	Per_thread_do = Matrix_size / Thread_num;		
-	pthread_mutex_init(&mut,NULL);					
-	for(int i = 0;i < Matrix_size;i++){
-		for(int j = 0;j < Matrix_size;j++){
-			scanf("%lf",&Matrix[i][j]);
+
+
+int vectorSum(int *v,int size,int nthreads){
+	pthread_t thread[nthreads];
+	int index[nthreads];
+	for(int i=0;i<nthreads;i++)
+	{
+		index[i]=i;
+		int error=pthread_create(&thread[i],NULL,arrSum,&index[i]);
+		if(error!=0)
+		{
+			printf("cant cread thread:%s/n",strerror(error));
+			return -1;
 		}
-	}															
-	pthread_t thread[Max_pthread_size];
-	int *id = (int *)malloc(sizeof(int) * (Thread_num));
-	struct timeval begin,end;
-    gettimeofday(&begin,NULL);
-	for(int i = 0;i < Thread_num;i++){
-		id[i] = i;
-		pthread_create(&thread[i],NULL,t_hread,(void*)&id[i]);
 	}
-	for(int i = 0;i < Thread_num;i++){
+
+	for(int i=0;i<nthreads;i++){
 		pthread_join(thread[i],NULL);
 	}
-	free(id);
-    gettimeofday(&end,NULL);
-	int time = (end.tv_sec - begin.tv_sec) * 1000000 + (end.tv_usec - begin.tv_usec);
-    printf("time: %d s\n", time);
-	printf("Определитель result is: %lf\n",result);
-    printf("size is :%d * %d\nvector has :%d",Matrix_size,Matrix_size,Matrix_size);
-    
+
 	return 0;
 }
+
+int main(int argc,char* argv[])
+{
+	num_t=atoi(argv[1]);
+	iniz();
+	vectorSum(arr_num,num,num_t);
+	printf("sum=%ld\n",sum);
+	return 0;
+}
+
 /**
  * @2th question
  *
